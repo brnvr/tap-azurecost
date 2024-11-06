@@ -1,134 +1,68 @@
 # tap-azurecost
 
-`tap-azurecost` is a Singer tap for azureCostManagement.
-
-Built with the [Meltano Tap SDK](https://sdk.meltano.com) for Singer Taps.
-
+`tap-azurecost` is a Meltano tap for querying data from Azure Cost Management API. The full documentation of the API endpoint can be found [here](https://learn.microsoft.com/en-us/rest/api/cost-management/query/usage?view=rest-cost-management-2023-11-01&tabs=HTTP). The tap has currently been tested for version `2023-11-01` of the API, and may not behave correctly for different versions.
 
 ## Configuration
 
 ### Accepted Config Options
 
-| Setting | Required | Default | Description |
-|:--------|:--------:|:-------:|:------------|
-| client_id | True     | None    | Client id for OAuth 2.0 authentication. |
-| client_secret | True     | None    | Client secret id for OAuth 2.0 authentication. |
-| tenant_id | True     | None    | Azure tenant id. |
-| subscription_id | True     | None    | Azure subscription id. |
-| api_version | True     | None    |             |
-| type | True     | Usage   | The type of the query. |
-| timeframe | False    | None    | The time frame for pulling data for the query |
-| time_period | False    | None    | Has time period for pulling data for the query. |
-| time_period.from | True     | None    | The start date to pull data from. |
-| time_period.to | True     | None    | The end date to pull data to. |
-| dataset | True     | None    | Has definition for data in this query. |
-| dataset.granularity | False    | None    | The granularity level of data. |
-| dataset.aggregation | False    | None    |             |
-| dataset.grouping | False    | None    |             |
-| dataset.filter | False    | None    | The filter expression to use in the query. Please reference our Query API REST documentation for how to properly format the filter. |
-| stream_maps | False    | None    | Config object for stream maps capability. For more information check out [Stream Maps](https://sdk.meltano.com/en/latest/stream_maps.html). |
-| stream_map_config | False    | None    | User-defined config values to be used within map expressions. |
-| faker_config | False    | None    | Config for the [`Faker`](https://faker.readthedocs.io/en/master/) instance variable `fake` used within map expressions. Only applicable if the plugin specifies `faker` as an addtional dependency (through the `singer-sdk` `faker` extra or directly). |
-| faker_config.seed | False    | None    | Value to seed the Faker generator for deterministic output: https://faker.readthedocs.io/en/master/#seeding-the-generator |       
-| faker_config.locale | False    | None    | One or more LCID locale strings to produce localized output for: https://faker.readthedocs.io/en/master/#localization |
-| flattening_enabled | False    | None    | 'True' to enable schema flattening and automatically expand nested properties. |
-| flattening_max_depth | False    | None    | The max depth to flatten schemas. |
-| batch_config | False    | None    |             |
-| batch_config.encoding | False    | None    | Specifies the format and compression of the batch files. |
-| batch_config.encoding.format | False    | None    | Format to use for batch files. |
-| batch_config.encoding.compression | False    | None    | Compression format to use for batch files. |
-| batch_config.storage | False    | None    | Defines the storage layer to use when writing batch files |
-| batch_config.storage.root | False    | None    | Root path to use when writing batch files. |
-| batch_config.storage.prefix | False    | None    | Prefix to use when writing batch files. |
+| Setting | Type | Required | Default | Description |
+|:--------|:--------:|:--------:|:-------:|:------------|
+| client_id | string | True     | None    | Client id for OAuth 2.0 authentication. |
+| client_secret | string | True     | None    | Client secret id for OAuth 2.0 authentication. |
+| tenant_id | string | True     | None    | Azure tenant id. |
+| subscription_id | string | True     | None    | Azure subscription id. |
+| api_version | string | True     | 2023-11-01 | API version. |
+| type | [ExportType](https://learn.microsoft.com/en-us/rest/api/cost-management/query/usage?view=rest-cost-management-2023-11-01&tabs=HTTP#exporttype) | True     | Usage   | The type of the query. |
+| timeframe| [TimeframeType](https://learn.microsoft.com/en-us/rest/api/cost-management/query/usage?view=rest-cost-management-2023-11-01&tabs=HTTP#timeframetype)  | False    | None    | The time frame for pulling data for the query |
+| time_period | [QueryTimePeriod](https://learn.microsoft.com/en-us/rest/api/cost-management/query/usage?view=rest-cost-management-2023-11-01&tabs=HTTP#querytimeperiod) | False    | None    | Has time period for pulling data for the query. |
+| dataset | [QueryDataset](https://learn.microsoft.com/en-us/rest/api/cost-management/query/usage?view=rest-cost-management-2023-11-01&tabs=HTTP#querydataset) | True     | None    | Has definition for data in this query. |
+| dataset.granularity | [GranularityType](https://learn.microsoft.com/en-us/rest/api/cost-management/query/usage?view=rest-cost-management-2023-11-01&tabs=HTTP#granularitytype)| False    | None    | The granularity level of data. |
+| dataset.aggregation | <string, [QueryAggregation](https://learn.microsoft.com/en-us/rest/api/cost-management/query/usage?view=rest-cost-management-2023-11-01&tabs=HTTP#queryaggregation)> | False    | None    | Dictionary of aggregation expression to use in the query. The key of each item in the dictionary is the alias for the aggregated column. Query can have up to 2 aggregation clauses. |
+| dataset.grouping | [QueryGrouping](https://learn.microsoft.com/en-us/rest/api/cost-management/query/usage?view=rest-cost-management-2023-11-01&tabs=HTTP#querygrouping)[] | False    | None    | Array of group by expression to use in the query. Query can have up to 2 group by clauses. |
+| dataset.filter | [QueryFilter](https://learn.microsoft.com/en-us/rest/api/cost-management/query/usage?view=rest-cost-management-2023-11-01&tabs=HTTP#queryfilter) | False    | None    | The filter expression to use in the query. Please reference our Query API REST documentation for how to properly format the filter. |
 
-A full list of supported settings and capabilities for this
-tap is available by running:
+A full list of supported settings and capabilities for this tap is available by running:
 
 ```bash
 tap-azurecost --about
 ```
 
-### Configure using environment variables
+### Example of configuration
 
-This Singer tap will automatically import any environment variables within the working directory's
-`.env` if the `--config=ENV` is provided, such that config values will be considered if a matching
-environment variable is set either in the terminal context or in the `.env` file.
+#### meltano.yml
 
-### Source Authentication and Authorization
-
-<!--
-Developer TODO: If your tap requires special access on the source system, or any special authentication requirements, provide those here.
--->
-
-## Usage
-
-You can easily run `tap-azurecost` by itself or in a pipeline using [Meltano](https://meltano.com/).
-
-### Executing the Tap Directly
-
-```bash
-tap-azurecost --version
-tap-azurecost --help
-tap-azurecost --config CONFIG --discover > ./catalog.json
+```yml
+ config:
+      timeframe: MonthToDate
+      dataset:
+        granularity: Daily
+        aggregation:
+          totalCost:
+            name: PreTaxCost
+            function: Sum
+          totalCostUSD:
+            name: PreTaxCostUSD
+            function: Sum
+        grouping:
+          - type: TagKey
+            name: clustername
+          - type: Dimension
+            name: ResourceGroup
+        filter:
+          tags:
+            name: clustername
+            operator: In
+            values:
+              - dbt_ci
 ```
 
-## Developer Resources
+#### .env
 
-Follow these instructions to contribute to this project.
-
-### Initialize your Development Environment
-
-```bash
-pipx install poetry
-poetry install
+```
+TAP_AZURECOST_CLIENT_ID=SOMETCLIENTID
+TAP_AZURECOST_CLIENT_SECRET=SOMECLIENTSECRET
+TAP_AZURECOST_TENANT_ID=SOMEAZURETENANTID
+TAP_AZURECOST_SUBSCRIPTION_ID=SOMEAZURESUBSCRIPTIONID
 ```
 
-### Create and Run Tests
-
-Create tests within the `tests` subfolder and
-  then run:
-
-```bash
-poetry run pytest
-```
-
-You can also test the `tap-azurecost` CLI interface directly using `poetry run`:
-
-```bash
-poetry run tap-azurecost --help
-```
-
-### Testing with [Meltano](https://www.meltano.com)
-
-_**Note:** This tap will work in any Singer environment and does not require Meltano.
-Examples here are for convenience and to streamline end-to-end orchestration scenarios._
-
-<!--
-Developer TODO:
-Your project comes with a custom `meltano.yml` project file already created. Open the `meltano.yml` and follow any "TODO" items listed in
-the file.
--->
-
-Next, install Meltano (if you haven't already) and any needed plugins:
-
-```bash
-# Install meltano
-pipx install meltano
-# Initialize meltano within this directory
-cd tap-azurecost
-meltano install
-```
-
-Now you can test and orchestrate using Meltano:
-
-```bash
-# Test invocation:
-meltano invoke tap-azurecost --version
-# OR run a test `elt` pipeline:
-meltano run tap-azurecost target-jsonl
-```
-
-### SDK Dev Guide
-
-See the [dev guide](https://sdk.meltano.com/en/latest/dev_guide.html) for more instructions on how to use the SDK to
-develop your own taps and targets.
