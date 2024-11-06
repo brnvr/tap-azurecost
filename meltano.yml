@@ -1,0 +1,70 @@
+version: 1
+send_anonymous_usage_stats: true
+project_id: "tap-azurecost"
+default_environment: test
+environments:
+- name: test
+plugins:
+  extractors:
+  - name: "tap-azurecost"
+    namespace: "tap_azurecost"
+    pip_url: -e .
+    capabilities:
+    - state
+    - catalog
+    - discover
+
+    select:
+    - '*.*'
+
+    settings:
+    - name: client_id
+      kind: string
+      sensitive: true
+    - name: client_secret
+      kind: string
+      sensitive: true
+    - name: tenant_id
+      kind: string
+      sensitive: true
+    - name: subscription_id
+      kind: string
+      sensitive: true
+    - name: api_version
+      kind: string
+    - name: type
+      kind: string
+    - name: timeframe
+      kind: string
+    - name: time_period
+      kind: object
+    - name: dataset
+      kind: object
+
+    config:
+      timeframe: MonthToDate
+      dataset:
+        granularity: Daily
+        aggregation:
+          totalCost:
+            name: PreTaxCost
+            function: Sum
+          totalCostUSD:
+            name: PreTaxCostUSD
+            function: Sum
+        grouping:
+          - type: TagKey
+            name: clustername
+          - type: Dimension
+            name: ResourceGroup
+        filter:
+          tags:
+            name: clustername
+            operator: In
+            values:
+              - dbt_ci
+
+  loaders:
+  - name: target-jsonl
+    variant: andyh1203
+    pip_url: target-jsonl
