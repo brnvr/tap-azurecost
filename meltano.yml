@@ -41,29 +41,6 @@ plugins:
     - name: dataset
       kind: object
 
-    config:
-      timeframe: MonthToDate
-      dataset:
-        granularity: Daily
-        aggregation:
-          totalCost:
-            name: PreTaxCost
-            function: Sum
-          totalCostUSD:
-            name: PreTaxCostUSD
-            function: Sum
-        grouping:
-          - type: TagKey
-            name: clustername
-          - type: Dimension
-            name: ResourceGroup
-        filter:
-          tags:
-            name: clustername
-            operator: In
-            values:
-              - dbt_ci
-
   loaders:
   - name: target-jsonl
     variant: andyh1203
